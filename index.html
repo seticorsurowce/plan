@@ -550,6 +550,24 @@
                 <button class="btn btn-success" onclick="loadOrdersFromSheet()">Odśwież zlecenia</button>
             </div>
             <div id="status-message"></div>
+            <div style="margin-top: 12px; padding: 12px; background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; font-size: 13px;">
+                <strong>Ważne:</strong> Arkusz musi być udostępniony publicznie:
+                <ol style="margin-top: 8px; margin-left: 20px;">
+                    <li>W Google Sheets kliknij "Udostępnij" (prawy górny róg)</li>
+                    <li>Kliknij "Zmień na: Każdy, kto ma link"</li>
+                    <li>Dla odczytu: wybierz "Przeglądający"</li>
+                    <li>Dla zapisu (zatwierdzanie): wybierz "Edytor"</li>
+                    <li>Upewnij się, że Google Sheets API jest włączone w konsoli Google Cloud</li>
+                </ol>
+                <div style="margin-top: 8px; padding: 8px; background-color: #dbeafe; border-radius: 4px;">
+                    <strong>Jak włączyć Google Sheets API:</strong><br>
+                    1. Wejdź na <a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a><br>
+                    2. Stwórz nowy projekt lub wybierz istniejący<br>
+                    3. Włącz "Google Sheets API" w bibliotece API<br>
+                    4. Stwórz klucz API w sekcji "Credentials"<br>
+                    5. (Opcjonalnie) Ogranicz klucz do Google Sheets API
+                </div>
+            </div>
         </div>
         
         <!-- Wybór maszyny -->
@@ -752,7 +770,14 @@
                 showStatus(`Wczytano ${unscheduledOrders.length} zleceń`, 'success');
                 renderAll();
             }).catch(error => {
-                showStatus('Błąd wczytywania danych: ' + error.message, 'error');
+                console.error('Błąd:', error);
+                if (error.status === 403) {
+                    showStatus('Błąd 403: Brak dostępu. Sprawdź czy arkusz jest udostępniony publicznie.', 'error');
+                } else if (error.status === 404) {
+                    showStatus('Błąd 404: Nie znaleziono arkusza. Sprawdź ID arkusza.', 'error');
+                } else {
+                    showStatus('Błąd wczytywania: ' + (error.message || 'Nieznany błąd'), 'error');
+                }
             });
         }
 
@@ -807,7 +832,12 @@
                 showStatus(`Zatwierdzono zlecenie ${originalId}`, 'success');
                 renderAll();
             }).catch(error => {
-                showStatus('Błąd aktualizacji arkusza: ' + error.message, 'error');
+                console.error('Błąd:', error);
+                if (error.status === 403) {
+                    showStatus('Błąd 403: Brak uprawnień do zapisu. Arkusz musi mieć uprawnienia do edycji.', 'error');
+                } else {
+                    showStatus('Błąd aktualizacji: ' + (error.message || 'Nieznany błąd'), 'error');
+                }
             });
         }
 
