@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planer Produkcyjny - Google Sheets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9fafb;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            text-align: center;
+            color: #1f2937;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #374151;
+        }
+
+        .config-section {
+            background-color: #e0f2fe;
+            border: 1px solid #0284c7;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .config-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #0c4a6e;
+        }
+
+        .config-group {
+            margin-bottom: 12px;
+        }
+
+        .config-group label {
+            display: block;
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .config-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .config-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .status-message {
+            margin-top: 12px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .status-success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .status-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
+        .unscheduled-section {
+            margin-bottom: 24px;
+        }
+
+        .unscheduled-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 60px;
+            padding: 12px;
+            background-color: white;
+            border-radius: 8px;
+            border: 2px dashed #d1d5db;
+        }
+
+        .order-card {
+            background-color: #dbeafe;
+            border: 1px solid #93c5fd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: move;
+            transition: background-color 0.2s;
+            max-width: 200px;
+        }
+
+        .order-card:hover {
+            background-color: #bfdbfe;
+        }
+
+        .order-card.scheduled {
+            background-color: #dcfce7;
+            border-color: #86efac;
+        }
+
+        .order-card.scheduled:hover {
+            background-color: #bbf7d0;
+        }
+
+        .order-card.confirmed {
+            background-color: #a7f3d0;
+            border-color: #34d399;
+            cursor: not-allowed;
+        }
+
+        .order-card.split-part {
+            background-color: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        .order-card.split-part:hover {
+            background-color: #fde68a;
+        }
+
+        .order-card.split-part.manual {
+            background-color: #fef2e3;
+            border-color: #fb923c;
+        }
+
+        .order-card.split-part.manual:hover {
+            background-color: #fed7aa;
+        }
+
+        .order-id {
+            font-weight: 500;
+            font-size: 14px;
+            color: #1f2937;
+        }
+
+        .order-title {
+            font-size: 12px;
+            color: #6b7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+
+        .order-duration {
+            font-size: 12px;
+            font-weight: 500;
+            color: #1d4ed8;
+        }
+
+        .order-duration.scheduled {
+            color: #166534;
+        }
+
+        .order-duration.split-part {
+            color: #d97706;
+        }
+
+        .order-duration.split-part.manual {
+            color: #ea580c;
+        }
+
+        .empty-message {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .machine-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .machine-btn {
+            background-color: #f3f4f6;
+            color: #374151;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+            min-width: 80px;
+        }
+
+        .machine-btn:hover {
+            background-color: #e5e7eb;
+            border-color: #9ca3af;
+        }
+
+        .machine-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .machine-btn.active:hover {
+            background-color: #2563eb;
+        }
+
+        .calendar-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            gap: 16px;
+        }
+
+        .nav-button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-button:hover {
+            background-color: #2563eb;
+        }
+
+        .nav-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .week-display {
+            font-weight: 600;
+            color: #374151;
+            font-size: 16px;
+        }
+
+        .planner-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .planner-wrapper {
+            overflow-x: auto;
+        }
+
+        .planner-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .planner-table thead tr {
+            background-color: #f3f4f6;
+        }
+
+        .planner-table th {
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .planner-table th:first-child {
+            width: 80px;
+        }
+
+        .planner-table th:not(:first-child) {
+            text-align: center;
+            width: 150px;
+            min-width: 150px;
+            max-width: 150px;
+        }
+
+        .planner-table td {
+            padding: 4px;
+            height: 32px;
+            border-top: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            position: relative;
+        }
+
+        .planner-table td:not(:first-child) {
+            width: 150px;
+            min-width: 150px;
+            max-width: 150px;
+        }
+
+        .time-cell {
+            font-size: 12px;
+            color: #6b7280;
+            font-family: monospace;
+        }
+
+        .night-shift {
+            background-color: #1f2937 !important;
+            color: #f9fafb;
+        }
+
+        .night-shift.time-cell {
+            background-color: #374151;
+            color: #d1d5db;
+        }
+
+        .drop-zone {
+            min-height: 32px;
+        }
+
+        .drop-zone.drag-over {
+            background-color: #fef3c7;
+        }
+
+        .scheduled-order {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #dcfce7;
+            border: 1px solid #86efac;
+            border-radius: 4px;
+            cursor: move;
+            z-index: 10;
+            transition: background-color 0.2s;
+            padding: 4px;
+        }
+
+        .scheduled-order:hover {
+            background-color: #bbf7d0;
+        }
+
+        .scheduled-order.confirmed {
+            background-color: #a7f3d0;
+            border-color: #34d399;
+            cursor: not-allowed;
+        }
+
+        .scheduled-order.split-part {
+            background-color: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        .scheduled-order.split-part:hover {
+            background-color: #fde68a;
+        }
+
+        .scheduled-order.split-part.manual {
+            background-color: #fef2e3;
+            border-color: #fb923c;
+        }
+
+        .scheduled-order.split-part.manual:hover {
+            background-color: #fed7aa;
+        }
+
+        .scheduled-order.selected {
+            outline: 3px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        .order-actions {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .action-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scheduled-order:hover .action-btn {
+            opacity: 1;
+        }
+
+        .remove-btn {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .confirm-btn {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .keyboard-hint {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 10px;
+            color: #6b7280;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 1px 3px;
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .scheduled-order.selected .keyboard-hint {
+            opacity: 1;
+        }
+
+        .split-handle {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #ef4444;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 15;
+        }
+
+        .split-handle:hover {
+            height: 4px;
+            background-color: #dc2626;
+            opacity: 1 !important;
+        }
+
+        .scheduled-order:hover .split-handle {
+            opacity: 0.7;
+        }
+
+        .split-handle::after {
+            content: '✂️';
+            position: absolute;
+            right: 4px;
+            top: -8px;
+            font-size: 10px;
+            background: white;
+            padding: 1px 2px;
+            border-radius: 2px;
+            border: 1px solid #ef4444;
+        }
+
+        .instructions {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .instructions ul {
+            list-style-type: disc;
+            padding-left: 20px;
+            margin-top: 8px;
+        }
+
+        .instructions li {
+            margin-bottom: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Planer Produkcyjny</h1>
+
+        <!-- Sekcja konfiguracji Google Sheets -->
+        <div class="config-section">
+            <h3>Konfiguracja Google Sheets</h3>
+            <div class="config-group">
+                <label for="spreadsheet-id">ID arkusza Google Sheets:</label>
+                <input type="text" id="spreadsheet-id" placeholder="np. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms">
+            </div>
+            <div class="config-group">
+                <label for="sheet-name">Nazwa arkusza:</label>
+                <input type="text" id="sheet-name" placeholder="np. Arkusz1" value="Arkusz1">
+            </div>
+            <div class="config-group">
+                <label for="api-key">Klucz API Google:</label>
+                <input type="text" id="api-key" placeholder="Twój klucz API">
+            </div>
+            <div class="config-actions">
+                <button class="btn btn-primary" onclick="initGoogleSheets()">Połącz z arkuszem</button>
+                <button class="btn btn-success" onclick="loadOrdersFromSheet()">Odśwież zlecenia</button>
+            </div>
+            <div id="status-message"></div>
+        </div>
+        
+        <!-- Wybór maszyny -->
+        <div class="machine-selector">
+            <button class="machine-btn active" onclick="selectMachine('RK')">RK</button>
+            <button class="machine-btn" onclick="selectMachine('OM')">OM</button>
+            <button class="machine-btn" onclick="selectMachine('N240')">N240</button>
+            <button class="machine-btn" onclick="selectMachine('N330')">N330</button>
+        </div>
+        
+        <!-- Nawigacja kalendarza -->
+        <div class="calendar-navigation">
+            <button class="nav-button" onclick="navigateWeek(-1)">← Poprzednie 2 dni</button>
+            <div class="week-display" id="week-display">Tydzień</div>
+            <button class="nav-button" onclick="navigateWeek(1)">Następne 2 dni →</button>
+        </div>
+
+        <!-- Lista niezaplanowanych zleceń -->
+        <div class="unscheduled-section">
+            <h2>Niezaplanowane zlecenia</h2>
+            <div id="unscheduled-container" class="unscheduled-container">
+                <div class="loading">Wczytaj dane z arkusza Google Sheets</div>
+            </div>
+        </div>
+
+        <!-- Tabela planera -->
+        <div class="planner-container">
+            <div class="planner-wrapper">
+                <table id="planner-table" class="planner-table">
+                    <thead>
+                        <tr>
+                            <th>Czas</th>
+                            <th>Poniedziałek</th>
+                            <th>Wtorek</th>
+                            <th>Środa</th>
+                            <th>Czwartek</th>
+                            <th>Piątek</th>
+                            <th>Sobota</th>
+                            <th>Niedziela</th>
+                        </tr>
+                    </thead>
+                    <tbody id="planner-body">
+                        <!-- Wiersze będą dodane przez JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Legenda -->
+        <div class="instructions">
+            <p><strong>Instrukcja:</strong></p>
+            <ul>
+                <li><strong>Połącz z arkuszem Google Sheets podając ID arkusza i klucz API</strong></li>
+                <li><strong>Wybierz maszynę (RK, OM, N240, N330) - każda ma niezależny plan</strong></li>
+                <li><strong>Użyj strzałek ← → aby przewijać kalendarz po 2 dni</strong></li>
+                <li>Przeciągnij zlecenia z górnej sekcji do planera</li>
+                <li>Zlecenia można przemieszczać między dniami i godzinami</li>
+                <li>Wstawianie zlecenia automatycznie przesuwa inne w dół</li>
+                <li>Długie zlecenia są automatycznie dzielone między dni (żółte - łączą się przy przeciąganiu)</li>
+                <li><strong>Najedź na zlecenie i kliknij czerwoną linię ✂️ aby podzielić ręcznie (pomarańczowe - niezależne części)</strong></li>
+                <li><strong>Kliknij zlecenie aby je zaznaczyć, użyj strzałek ↑↓ do przesuwania</strong></li>
+                <li><strong>Kliknij ✓ aby zatwierdzić zlecenie w planie (aktualizuje arkusz)</strong></li>
+                <li>Kliknij × aby usunąć zlecenie z planera</li>
+                <li>Każdy slot to 15 minut (godziny pracy: 6:00-5:45+ następnego dnia)</li>
+                <li>Ciemny tło oznacza godziny nocne (22:00-6:00)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Google Sheets API -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    
+    <script>
+        // Dane aplikacji
+        const daysOfWeek = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'];
+        const machines = ['RK', 'OM', 'N240', 'N330'];
+        const startHour = 6;
+        const endHour = 30; // 6:00 następnego dnia = 30 (6 + 24)
+        const slotsPerHour = 4;
+
+        // Stan aplikacji
+        let unscheduledOrders = [];
+        let selectedMachine = 'RK';
+        let schedule = {}; // schedule[machine] = { dateKey: orders[] }
+        let draggedOrder = null;
+        let timeSlots = [];
+        let selectedOrder = null;
+        let currentWeekStart = new Date();
+        let confirmedOrders = {}; // przechowuje zatwierdzone zlecenia
+        let sheetRowMap = {}; // mapowanie ID zlecenia na numer wiersza w arkuszu
+
+        // Konfiguracja Google Sheets
+        let googleSheetsConfig = {
+            spreadsheetId: '',
+            sheetName: 'Arkusz1',
+            apiKey: '',
+            isInitialized: false
+        };
+
+        // Ustaw currentWeekStart na najbliższy poniedziałek
+        currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1);
+
+        // Inicjalizacja harmonogramów dla maszyn
+        machines.forEach(machine => {
+            schedule[machine] = {};
+            confirmedOrders[machine] = {};
+        });
+
+        // Funkcja inicjalizacji Google Sheets API
+        function initGoogleSheets() {
+            const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
+            const sheetName = document.getElementById('sheet-name').value.trim();
+            const apiKey = document.getElementById('api-key').value.trim();
+
+            if (!spreadsheetId || !apiKey) {
+                showStatus('Wypełnij ID arkusza i klucz API', 'error');
+                return;
+            }
+
+            googleSheetsConfig.spreadsheetId = spreadsheetId;
+            googleSheetsConfig.sheetName = sheetName;
+            googleSheetsConfig.apiKey = apiKey;
+
+            gapi.load('client', () => {
+                gapi.client.init({
+                    apiKey: apiKey,
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+                }).then(() => {
+                    googleSheetsConfig.isInitialized = true;
+                    showStatus('Połączono z Google Sheets!', 'success');
+                    loadOrdersFromSheet();
+                }).catch(error => {
+                    showStatus('Błąd połączenia: ' + error.message, 'error');
+                });
+            });
+        }
+
+        // Funkcja wyświetlania statusu
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.textContent = message;
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status-message';
+            }, 5000);
+        }
+
+        // Funkcja ładowania zleceń z arkusza
+        function loadOrdersFromSheet() {
+            if (!googleSheetsConfig.isInitialized) {
+                showStatus('Najpierw połącz z arkuszem Google Sheets', 'error');
+                return;
+            }
+
+            const range = `${googleSheetsConfig.sheetName}!A:F`;
+            
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: googleSheetsConfig.spreadsheetId,
+                range: range
+            }).then(response => {
+                const values = response.result.values;
+                if (!values || values.length === 0) {
+                    showStatus('Brak danych w arkuszu', 'error');
+                    return;
+                }
+
+                unscheduledOrders = [];
+                sheetRowMap = {};
+
+                // Pomijamy nagłówek (pierwszy wiersz)
+                for (let i = 1; i < values.length; i++) {
+                    const row = values[i];
+                    const orderId = row[0] || '';
+                    const productName = row[1] || '';
+                    const rawMaterial = row[2] || '';
+                    const status = row[3] || '';
+                    const productionTime = parseInt(row[4]) || 0;
+                    const isPlanned = row[5] || '';
+
+                    // Sprawdzamy warunki
+                    if (rawMaterial === 'Dostępny' && 
+                        status === 'W realizacji' && 
+                        isPlanned === '' &&
+                        orderId && 
+                        productionTime > 0) {
+                        
+                        unscheduledOrders.push({
+                            id: orderId,
+                            title: productName,
+                            duration: productionTime
+                        });
+
+                        // Zapisujemy mapowanie ID zlecenia na numer wiersza (i+1 bo arkusz numeruje od 1)
+                        sheetRowMap[orderId] = i + 1;
+                    }
+                }
+
+                showStatus(`Wczytano ${unscheduledOrders.length} zleceń`, 'success');
+                renderAll();
+            }).catch(error => {
+                showStatus('Błąd wczytywania danych: ' + error.message, 'error');
+            });
+        }
+
+        // Funkcja aktualizacji arkusza po zatwierdzeniu zlecenia
+        function confirmOrder(orderId) {
+            if (!googleSheetsConfig.isInitialized) {
+                showStatus('Brak połączenia z arkuszem', 'error');
+                return;
+            }
+
+            // Znajdź zlecenie w harmonogramie
+            let orderData = null;
+            let orderDate = null;
+            
+            Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                const found = schedule[selectedMachine][dateKey].find(order => order.id === orderId);
+                if (found) {
+                    orderData = found;
+                    orderDate = dateKey;
+                }
+            });
+
+            if (!orderData) return;
+
+            // Znajdź oryginalny ID zlecenia (w przypadku części)
+            const originalId = orderData.originalId || orderData.id;
+            
+            // Sprawdź czy mamy numer wiersza dla tego zlecenia
+            const rowNumber = sheetRowMap[originalId];
+            if (!rowNumber) {
+                showStatus('Nie znaleziono zlecenia w arkuszu', 'error');
+                return;
+            }
+
+            // Aktualizuj kolumnę F w arkuszu
+            const range = `${googleSheetsConfig.sheetName}!F${rowNumber}`;
+            
+            gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId: googleSheetsConfig.spreadsheetId,
+                range: range,
+                valueInputOption: 'RAW',
+                resource: {
+                    values: [['ZAPL']]
+                }
+            }).then(() => {
+                // Oznacz zlecenie jako zatwierdzone
+                if (!confirmedOrders[selectedMachine][orderDate]) {
+                    confirmedOrders[selectedMachine][orderDate] = [];
+                }
+                confirmedOrders[selectedMachine][orderDate].push(orderId);
+                
+                showStatus(`Zatwierdzono zlecenie ${originalId}`, 'success');
+                renderAll();
+            }).catch(error => {
+                showStatus('Błąd aktualizacji arkusza: ' + error.message, 'error');
+            });
+        }
+
+        // Funkcja sprawdzania czy zlecenie jest zatwierdzone
+        function isOrderConfirmed(orderId, date) {
+            const dateKey = formatDateKey(date);
+            return confirmedOrders[selectedMachine][dateKey] && 
+                   confirmedOrders[selectedMachine][dateKey].includes(orderId);
+        }
+
+        // Funkcje obsługi dat
+        function getCurrentWeekDates() {
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + i);
+                dates.push(date);
+            }
+            return dates;
+        }
+
+        function formatDate(date) {
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            return `${day}.${month}`;
+        }
+
+        function formatDateKey(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getDayNameFromDate(date) {
+            const dayNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+            return dayNames[date.getDay()];
+        }
+
+        function formatWeekRange() {
+            const weekDates = getCurrentWeekDates();
+            const firstDay = formatDate(weekDates[0]);
+            const lastDay = formatDate(weekDates[6]);
+            return `${firstDay} - ${lastDay}`;
+        }
+
+        function navigateWeek(direction) {
+            const daysToMove = direction * 2;
+            currentWeekStart.setDate(currentWeekStart.getDate() + daysToMove);
+            renderAll();
+        }
+
+        // Funkcja wyboru maszyny
+        function selectMachine(machine) {
+            selectedMachine = machine;
+            selectedOrder = null;
+            
+            // Zaktualizuj przyciski
+            document.querySelectorAll('.machine-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderAll();
+        }
+
+        // Funkcje do obsługi harmonogramu dla wybranej maszyny
+        function getScheduleForDate(date) {
+            const dateKey = formatDateKey(date);
+            if (!schedule[selectedMachine][dateKey]) {
+                schedule[selectedMachine][dateKey] = [];
+            }
+            return schedule[selectedMachine][dateKey];
+        }
+
+        function setScheduleForDate(date, orders) {
+            const dateKey = formatDateKey(date);
+            schedule[selectedMachine][dateKey] = orders;
+        }
+
+        // Generowanie slotów czasowych (6:00 - 5:45 następnego dnia)
+        function generateTimeSlots() {
+            const slots = [];
+            for (let hour = startHour; hour < endHour; hour++) {
+                for (let quarter = 0; quarter < slotsPerHour; quarter++) {
+                    const actualHour = hour >= 24 ? hour - 24 : hour;
+                    const minutes = quarter * 15;
+                    const timeLabel = `${actualHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    const isNextDay = hour >= 24;
+                    
+                    slots.push({
+                        id: `${hour}-${quarter}`,
+                        time: timeLabel,
+                        minutes: hour * 60 + minutes,
+                        isNextDay: isNextDay
+                    });
+                }
+            }
+            return slots;
+        }
+
+        // Funkcje pomocnicze
+        function calculateSlots(duration) {
+            return Math.ceil(duration / 15);
+        }
+
+        function formatDuration(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return hours > 0 ? `${hours}:${mins.toString().padStart(2, '0')}` : `${mins}min`;
+        }
+
+        function formatTime(slotIndex) {
+            const slot = timeSlots[slotIndex];
+            return slot ? slot.time : '';
+        }
+
+        function canPlaceOrder(date, startSlot, slots, excludeOrderId = null) {
+            const daySchedule = getScheduleForDate(date).filter(order => order.id !== excludeOrderId);
+            
+            for (let order of daySchedule) {
+                const orderEnd = order.startSlot + order.slots;
+                const newOrderEnd = startSlot + slots;
+                
+                if (!(newOrderEnd <= order.startSlot || startSlot >= orderEnd)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function splitOrderAcrossDays(order, startDate, startSlot) {
+            const slots = calculateSlots(order.duration);
+            const slotsRemainingInDay = timeSlots.length - startSlot;
+            
+            if (slots <= slotsRemainingInDay) {
+                return [{
+                    ...order,
+                    startSlot: startSlot,
+                    slots: slots,
+                    date: new Date(startDate),
+                    part: null
+                }];
+            }
+            
+            const parts = [];
+            let remainingSlots = slots;
+            let currentDate = new Date(startDate);
+            let currentStartSlot = startSlot;
+            let partNumber = 1;
+            
+            while (remainingSlots > 0) {
+                const slotsAvailableInCurrentDay = currentDate.getTime() === startDate.getTime() ? 
+                    slotsRemainingInDay : timeSlots.length;
+                
+                const slotsToUseInThisDay = Math.min(remainingSlots, slotsAvailableInCurrentDay);
+                
+                if (slotsToUseInThisDay > 0) {
+                    const partDuration = slotsToUseInThisDay * 15;
+                    parts.push({
+                        id: `${order.id}_part${partNumber}`,
+                        originalId: order.id,
+                        title: `${order.title} (część ${partNumber})`,
+                        duration: partDuration,
+                        startSlot: currentStartSlot,
+                        slots: slotsToUseInThisDay,
+                        date: new Date(currentDate),
+                        part: partNumber,
+                        totalParts: null,
+                        splitType: 'auto'
+                    });
+                    
+                    remainingSlots -= slotsToUseInThisDay;
+                    partNumber++;
+                }
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+                currentStartSlot = 0;
+            }
+            
+            parts.forEach(part => {
+                part.totalParts = parts.length;
+                part.title = `${order.title} (część ${part.part}/${parts.length})`;
+            });
+            
+            return parts;
+        }
+
+        function shiftOrdersDown(date, fromSlot, slots) {
+            const daySchedule = [...getScheduleForDate(date)];
+            const affectedOrders = daySchedule.filter(order => 
+                order.startSlot >= fromSlot
+            ).sort((a, b) => a.startSlot - b.startSlot);
+
+            let newSchedule = daySchedule.filter(order => order.startSlot < fromSlot);
+            let currentSlot = fromSlot + slots;
+
+            const ordersToRelocate = [];
+
+            for (let order of affectedOrders) {
+                if (currentSlot + order.slots > timeSlots.length) {
+                    const remainingSlotsInDay = timeSlots.length - currentSlot;
+                    
+                    if (remainingSlotsInDay > 0) {
+                        if (order.originalId || order.part) {
+                            ordersToRelocate.push(order);
+                        } else {
+                            const originalDuration = order.duration;
+                            const durationForThisDay = remainingSlotsInDay * 15;
+                            const remainingDuration = originalDuration - durationForThisDay;
+                            
+                            if (durationForThisDay > 0) {
+                                const partInThisDay = {
+                                    id: `${order.id}_part1`,
+                                    originalId: order.id,
+                                    title: `${order.title} (część 1/2)`,
+                                    duration: durationForThisDay,
+                                    startSlot: currentSlot,
+                                    slots: remainingSlotsInDay,
+                                    date: new Date(date),
+                                    part: 1,
+                                    totalParts: 2,
+                                    splitType: 'auto'
+                                };
+                                newSchedule.push(partInThisDay);
+                            }
+                            
+                            if (remainingDuration > 0) {
+                                const nextDate = new Date(date);
+                                nextDate.setDate(nextDate.getDate() + 1);
+                                const partForNextDay = {
+                                    id: `${order.id}_part2`,
+                                    originalId: order.id,
+                                    title: `${order.title} (część 2/2)`,
+                                    duration: remainingDuration,
+                                    slots: calculateSlots(remainingDuration),
+                                    date: nextDate,
+                                    part: 2,
+                                    totalParts: 2,
+                                    splitType: 'auto'
+                                };
+                                ordersToRelocate.push(partForNextDay);
+                            }
+                        }
+                    } else {
+                        ordersToRelocate.push(order);
+                    }
+                } else {
+                    const newOrder = { ...order, startSlot: currentSlot };
+                    newSchedule.push(newOrder);
+                    currentSlot += order.slots;
+                }
+            }
+
+            relocateOrdersToNextDays(date, ordersToRelocate);
+            return newSchedule;
+        }
+
+        function relocateOrdersToNextDays(currentDate, ordersToRelocate) {
+            ordersToRelocate.forEach(order => {
+                let placed = false;
+                let searchDate = order.date ? new Date(order.date) : new Date(currentDate);
+                
+                if (!order.date) {
+                    searchDate.setDate(searchDate.getDate() + 1);
+                }
+                
+                for (let i = 0; i < 30 && !placed; i++) {
+                    let freeSlot = 0;
+                    while (freeSlot < timeSlots.length) {
+                        if (canPlaceOrder(searchDate, freeSlot, order.slots)) {
+                            if (freeSlot + order.slots <= timeSlots.length) {
+                                const scheduleForDate = getScheduleForDate(searchDate);
+                                scheduleForDate.push({
+                                    ...order,
+                                    startSlot: freeSlot,
+                                    date: new Date(searchDate)
+                                });
+                                scheduleForDate.sort((a, b) => a.startSlot - b.startSlot);
+                                setScheduleForDate(searchDate, scheduleForDate);
+                                placed = true;
+                                break;
+                            } else {
+                                const remainingSlotsInDay = timeSlots.length - freeSlot;
+                                const durationForThisDay = remainingSlotsInDay * 15;
+                                const remainingDuration = order.duration - durationForThisDay;
+                                
+                                if (durationForThisDay > 0) {
+                                    const newPartNumber = order.part ? order.part : 1;
+                                    const partForThisDay = {
+                                        id: order.originalId ? `${order.originalId}_part${newPartNumber}` : `${order.id}_part${newPartNumber}`,
+                                        originalId: order.originalId || order.id,
+                                        title: `${(order.title || '').replace(/ \(część \d+\/\d+\)/, '')} (część ${newPartNumber})`,
+                                        duration: durationForThisDay,
+                                        startSlot: freeSlot,
+                                        slots: remainingSlotsInDay,
+                                        date: new Date(searchDate),
+                                        part: newPartNumber,
+                                        totalParts: null,
+                                        splitType: 'auto'
+                                    };
+                                    
+                                    const scheduleForDate = getScheduleForDate(searchDate);
+                                    scheduleForDate.push(partForThisDay);
+                                    scheduleForDate.sort((a, b) => a.startSlot - b.startSlot);
+                                    setScheduleForDate(searchDate, scheduleForDate);
+                                    
+                                    if (remainingDuration > 0) {
+                                        order.duration = remainingDuration;
+                                        order.slots = calculateSlots(remainingDuration);
+                                        order.part = newPartNumber + 1;
+                                        searchDate.setDate(searchDate.getDate() + 1);
+                                    } else {
+                                        placed = true;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        freeSlot++;
+                    }
+                    
+                    if (!placed) {
+                        searchDate.setDate(searchDate.getDate() + 1);
+                    }
+                }
+                
+                if (!placed) {
+                    const originalTitle = order.title ? order.title.replace(/ \(część \d+\/\d+\)/, '') : '';
+                    unscheduledOrders.push({
+                        id: order.originalId || order.id,
+                        title: originalTitle,
+                        duration: order.duration
+                    });
+                }
+            });
+        }
+
+        function getAllPartsOfOrder(originalId) {
+            const parts = [];
+            Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                const dayParts = schedule[selectedMachine][dateKey].filter(order => 
+                    order.originalId === originalId || order.id === originalId
+                );
+                parts.push(...dayParts);
+            });
+            return parts;
+        }
+
+        function splitOrder(orderId, splitAtSlot) {
+            let orderToSplit = null;
+            let sourceDate = null;
+            
+            Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                const found = schedule[selectedMachine][dateKey].find(order => order.id === orderId);
+                if (found) {
+                    orderToSplit = found;
+                    sourceDate = new Date(dateKey);
+                }
+            });
+
+            if (!orderToSplit || !sourceDate) return;
+
+            const slotsBeforeSplit = splitAtSlot - orderToSplit.startSlot;
+            const slotsAfterSplit = orderToSplit.slots - slotsBeforeSplit;
+            
+            if (slotsBeforeSplit <= 0 || slotsAfterSplit <= 0) return;
+
+            const durationBeforeSplit = slotsBeforeSplit * 15;
+            const durationAfterSplit = slotsAfterSplit * 15;
+
+            const daySchedule = getScheduleForDate(sourceDate);
+            const newSchedule = daySchedule.filter(order => order.id !== orderId);
+
+            const firstPart = {
+                id: `${orderToSplit.originalId || orderToSplit.id}_part1`,
+                originalId: orderToSplit.originalId || orderToSplit.id,
+                title: `${orderToSplit.title.replace(/ \(część \d+\/\d+\)/, '')} (część 1/2)`,
+                duration: durationBeforeSplit,
+                startSlot: orderToSplit.startSlot,
+                slots: slotsBeforeSplit,
+                date: new Date(sourceDate),
+                part: 1,
+                totalParts: 2,
+                splitType: 'manual'
+            };
+
+            const secondPart = {
+                id: `${orderToSplit.originalId || orderToSplit.id}_part2`,
+                originalId: orderToSplit.originalId || orderToSplit.id,
+                title: `${orderToSplit.title.replace(/ \(część \d+\/\d+\)/, '')} (część 2/2)`,
+                duration: durationAfterSplit,
+                startSlot: splitAtSlot,
+                slots: slotsAfterSplit,
+                date: new Date(sourceDate),
+                part: 2,
+                totalParts: 2,
+                splitType: 'manual'
+            };
+
+            newSchedule.push(firstPart);
+            newSchedule.push(secondPart);
+            newSchedule.sort((a, b) => a.startSlot - b.startSlot);
+            setScheduleForDate(sourceDate, newSchedule);
+
+            renderAll();
+        }
+
+        // Renderowanie interfejsu
+        function renderUnscheduledOrders() {
+            const container = document.getElementById('unscheduled-container');
+            container.innerHTML = '';
+
+            if (unscheduledOrders.length === 0) {
+                if (googleSheetsConfig.isInitialized) {
+                    container.innerHTML = '<div class="empty-message">Wszystkie zlecenia zostały zaplanowane lub brak zleceń spełniających kryteria</div>';
+                } else {
+                    container.innerHTML = '<div class="loading">Wczytaj dane z arkusza Google Sheets</div>';
+                }
+                return;
+            }
+
+            unscheduledOrders.forEach(order => {
+                const orderElement = document.createElement('div');
+                orderElement.className = 'order-card';
+                orderElement.draggable = true;
+                orderElement.innerHTML = `
+                    <div class="order-id">${order.id}</div>
+                    <div class="order-title">${order.title}</div>
+                    <div class="order-duration">${formatDuration(order.duration)}</div>
+                `;
+
+                orderElement.addEventListener('dragstart', (e) => {
+                    draggedOrder = { ...order, source: 'unscheduled' };
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                container.appendChild(orderElement);
+            });
+        }
+
+        function renderPlannerTable() {
+            const tbody = document.getElementById('planner-body');
+            const thead = document.querySelector('#planner-table thead tr');
+            tbody.innerHTML = '';
+            
+            const weekDates = getCurrentWeekDates();
+            
+            const headerCells = thead.querySelectorAll('th');
+            for (let i = 1; i < headerCells.length; i++) {
+                const date = weekDates[i - 1];
+                const dayName = getDayNameFromDate(date);
+                const dateStr = formatDate(date);
+                headerCells[i].textContent = `${dayName} ${dateStr}`;
+            }
+
+            document.getElementById('week-display').textContent = formatWeekRange();
+
+            timeSlots.forEach((slot, slotIndex) => {
+                const row = document.createElement('tr');
+                
+                const timeCell = document.createElement('td');
+                timeCell.className = `time-cell ${slot.isNextDay ? 'night-shift' : ''}`;
+                timeCell.textContent = slot.isNextDay ? `${slot.time}+` : slot.time;
+                row.appendChild(timeCell);
+
+                weekDates.forEach((date, dayIndex) => {
+                    const cell = document.createElement('td');
+                    cell.className = `drop-zone ${slot.isNextDay ? 'night-shift' : ''}`;
+                    
+                    const daySchedule = getScheduleForDate(date);
+                    const orderInSlot = daySchedule.find(order => 
+                        order.startSlot <= slotIndex && slotIndex < order.startSlot + order.slots
+                    );
+                    
+                    const isFirstSlotOfOrder = orderInSlot && orderInSlot.startSlot === slotIndex;
+                    
+                    if (isFirstSlotOfOrder) {
+                        const orderElement = document.createElement('div');
+                        const isSplitPart = orderInSlot.part !== null;
+                        const isManualSplit = isSplitPart && orderInSlot.splitType === 'manual';
+                        const isSelected = selectedOrder === orderInSlot.id;
+                        const isConfirmed = isOrderConfirmed(orderInSlot.id, date);
+                        
+                        let className = 'scheduled-order';
+                        if (isConfirmed) {
+                            className += ' confirmed';
+                        }
+                        if (isSplitPart) {
+                            className += ' split-part';
+                            if (isManualSplit) {
+                                className += ' manual';
+                            }
+                        }
+                        if (isSelected) {
+                            className += ' selected';
+                        }
+                        
+                        orderElement.className = className;
+                        orderElement.style.height = `${orderInSlot.slots * 32}px`;
+                        orderElement.draggable = !isConfirmed;
+                        orderElement.tabIndex = 0;
+                        
+                        let durationClass = 'scheduled';
+                        if (isSplitPart) {
+                            durationClass = 'split-part';
+                            if (isManualSplit) {
+                                durationClass += ' manual';
+                            }
+                        }
+                        
+                        orderElement.innerHTML = `
+                            <div class="order-id">${orderInSlot.id}</div>
+                            <div class="order-title">${orderInSlot.title}</div>
+                            <div class="order-duration ${durationClass}">${formatDuration(orderInSlot.duration)}</div>
+                            <div class="order-actions">
+                                ${!isConfirmed ? `<button class="action-btn confirm-btn" onclick="confirmOrder('${orderInSlot.id}')" title="Zatwierdź zlecenie">✓</button>` : ''}
+                                <button class="action-btn remove-btn" onclick="removeFromSchedule('${orderInSlot.id}')" title="Usuń z planera">×</button>
+                            </div>
+                            ${!isConfirmed ? '<div class="keyboard-hint">↑↓</div>' : ''}
+                        `;
+
+                        if (orderInSlot.slots > 1 && !isConfirmed) {
+                            for (let i = 1; i < orderInSlot.slots; i++) {
+                                const splitHandle = document.createElement('div');
+                                splitHandle.className = 'split-handle';
+                                splitHandle.style.top = `${i * 32 - 1}px`;
+                                splitHandle.title = `Podziel zlecenie tutaj (${formatTime(orderInSlot.startSlot + i)})`;
+                                
+                                splitHandle.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    splitOrder(orderInSlot.id, orderInSlot.startSlot + i);
+                                });
+
+                                orderElement.appendChild(splitHandle);
+                            }
+                        }
+
+                        if (!isConfirmed) {
+                            orderElement.addEventListener('dragstart', (e) => {
+                                draggedOrder = { ...orderInSlot, source: 'schedule' };
+                                e.dataTransfer.effectAllowed = 'move';
+                            });
+
+                            orderElement.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                selectOrder(orderInSlot.id);
+                            });
+                        }
+
+                        cell.appendChild(orderElement);
+                    }
+
+                    cell.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        cell.classList.add('drag-over');
+                    });
+
+                    cell.addEventListener('dragleave', () => {
+                        cell.classList.remove('drag-over');
+                    });
+
+                    cell.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        cell.classList.remove('drag-over');
+                        handleDrop(date, slotIndex);
+                    });
+
+                    row.appendChild(cell);
+                });
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function selectOrder(orderId) {
+            selectedOrder = selectedOrder === orderId ? null : orderId;
+            renderAll();
+        }
+
+        function moveSelectedOrder(direction) {
+            if (!selectedOrder) return;
+
+            let orderToMove = null;
+            let sourceDate = null;
+            
+            Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                const found = schedule[selectedMachine][dateKey].find(order => order.id === selectedOrder);
+                if (found) {
+                    orderToMove = found;
+                    sourceDate = new Date(dateKey);
+                }
+            });
+
+            if (!orderToMove || !sourceDate) return;
+
+            const newStartSlot = orderToMove.startSlot + direction;
+            
+            if (newStartSlot < 0 || newStartSlot + orderToMove.slots > timeSlots.length) {
+                return;
+            }
+
+            if (canPlaceOrder(sourceDate, newStartSlot, orderToMove.slots, orderToMove.id)) {
+                const daySchedule = getScheduleForDate(sourceDate);
+                const newSchedule = daySchedule.filter(order => order.id !== orderToMove.id);
+                
+                newSchedule.push({
+                    ...orderToMove,
+                    startSlot: newStartSlot
+                });
+                
+                newSchedule.sort((a, b) => a.startSlot - b.startSlot);
+                setScheduleForDate(sourceDate, newSchedule);
+                renderAll();
+            }
+        }
+
+        function handleDrop(date, slotIndex) {
+            if (!draggedOrder) return;
+
+            const slots = calculateSlots(draggedOrder.duration);
+            let targetSlot = slotIndex;
+            
+            if (draggedOrder.source === 'schedule') {
+                if (draggedOrder.originalId && draggedOrder.splitType === 'auto') {
+                    const allParts = getAllPartsOfOrder(draggedOrder.originalId);
+                    
+                    if (allParts.length > 0 && allParts.every(part => part.splitType === 'auto')) {
+                        let totalDuration = 0;
+                        let originalTitle = '';
+                        
+                        allParts.forEach(part => {
+                            totalDuration += part.duration;
+                            if (!originalTitle) {
+                                originalTitle = part.title.replace(/ \(część \d+\/\d+\)/, '');
+                            }
+                        });
+                        
+                        Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                            schedule[selectedMachine][dateKey] = schedule[selectedMachine][dateKey].filter(order => 
+                                order.originalId !== draggedOrder.originalId && order.id !== draggedOrder.originalId
+                            );
+                        });
+                        
+                        draggedOrder = {
+                            id: draggedOrder.originalId,
+                            title: originalTitle,
+                            duration: totalDuration,
+                            source: 'schedule'
+                        };
+                    } else {
+                        Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                            schedule[selectedMachine][dateKey] = schedule[selectedMachine][dateKey].filter(order => order.id !== draggedOrder.id);
+                        });
+                    }
+                } else {
+                    Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                        schedule[selectedMachine][dateKey] = schedule[selectedMachine][dateKey].filter(order => order.id !== draggedOrder.id);
+                    });
+                }
+            } else {
+                unscheduledOrders = unscheduledOrders.filter(order => order.id !== draggedOrder.id);
+            }
+
+            const orderParts = splitOrderAcrossDays(draggedOrder, date, targetSlot);
+            
+            orderParts.forEach(part => {
+                if (canPlaceOrder(part.date, part.startSlot, part.slots)) {
+                    const daySchedule = getScheduleForDate(part.date);
+                    daySchedule.push(part);
+                    daySchedule.sort((a, b) => a.startSlot - b.startSlot);
+                    setScheduleForDate(part.date, daySchedule);
+                } else {
+                    const newDaySchedule = shiftOrdersDown(part.date, part.startSlot, part.slots);
+                    newDaySchedule.push(part);
+                    newDaySchedule.sort((a, b) => a.startSlot - b.startSlot);
+                    setScheduleForDate(part.date, newDaySchedule);
+                }
+            });
+
+            draggedOrder = null;
+            renderAll();
+        }
+
+        function removeFromSchedule(orderId) {
+            let originalId = orderId;
+            let isPartOfSplit = false;
+            
+            let orderToRemove = null;
+            let sourceDate = null;
+            
+            Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                const found = schedule[selectedMachine][dateKey].find(order => order.id === orderId);
+                if (found) {
+                    orderToRemove = found;
+                    sourceDate = new Date(dateKey);
+                    if (found.originalId) {
+                        originalId = found.originalId;
+                        isPartOfSplit = true;
+                    }
+                }
+            });
+            
+            if (!orderToRemove || !sourceDate) return;
+            
+            // Usuń z listy zatwierdzonych
+            const dateKey = formatDateKey(sourceDate);
+            if (confirmedOrders[selectedMachine][dateKey]) {
+                confirmedOrders[selectedMachine][dateKey] = confirmedOrders[selectedMachine][dateKey].filter(id => id !== orderId);
+            }
+            
+            if (isPartOfSplit) {
+                if (orderToRemove.splitType === 'manual') {
+                    const daySchedule = getScheduleForDate(sourceDate);
+                    const newSchedule = daySchedule.filter(order => order.id !== orderId);
+                    setScheduleForDate(sourceDate, newSchedule);
+                    
+                    unscheduledOrders.push({
+                        id: orderToRemove.id,
+                        title: orderToRemove.title,
+                        duration: orderToRemove.duration
+                    });
+                } else {
+                    const allParts = getAllPartsOfOrder(originalId);
+                    let totalDuration = 0;
+                    let originalTitle = '';
+                    
+                    allParts.forEach(part => {
+                        totalDuration += part.duration;
+                        if (!originalTitle) {
+                            originalTitle = part.title.replace(/ \(część \d+\/\d+\)/, '');
+                        }
+                    });
+                    
+                    Object.keys(schedule[selectedMachine]).forEach(dateKey => {
+                        schedule[selectedMachine][dateKey] = schedule[selectedMachine][dateKey].filter(order => 
+                            order.originalId !== originalId && order.id !== originalId
+                        );
+                        
+                        // Usuń wszystkie części z listy zatwierdzonych
+                        if (confirmedOrders[selectedMachine][dateKey]) {
+                            confirmedOrders[selectedMachine][dateKey] = confirmedOrders[selectedMachine][dateKey].filter(id => {
+                                const order = allParts.find(p => p.id === id);
+                                return !order;
+                            });
+                        }
+                    });
+                    
+                    unscheduledOrders.push({
+                        id: originalId,
+                        title: originalTitle,
+                        duration: totalDuration
+                    });
+                }
+            } else {
+                const daySchedule = getScheduleForDate(sourceDate);
+                const newSchedule = daySchedule.filter(order => order.id !== orderId);
+                setScheduleForDate(sourceDate, newSchedule);
+                
+                unscheduledOrders.push({
+                    id: orderToRemove.id,
+                    title: orderToRemove.title,
+                    duration: orderToRemove.duration
+                });
+            }
+            
+            renderAll();
+        }
+
+        function renderAll() {
+            renderUnscheduledOrders();
+            renderPlannerTable();
+        }
+
+        function handleKeyboard(e) {
+            if (!selectedOrder) return;
+            
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                moveSelectedOrder(-1);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                moveSelectedOrder(1);
+            } else if (e.key === 'Escape') {
+                selectedOrder = null;
+                renderAll();
+            }
+        }
+
+        function init() {
+            timeSlots = generateTimeSlots();
+            renderAll();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('keydown', handleKeyboard);
+        document.addEventListener('click', () => {
+            if (selectedOrder) {
+                selectedOrder = null;
+                renderAll();
+            }
+        });
+    </script>
+</body>
+</html>
