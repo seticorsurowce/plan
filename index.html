@@ -548,21 +548,24 @@
             <div class="config-actions">
                 <button class="btn btn-primary" onclick="initGoogleSheets()">Połącz z arkuszem</button>
                 <button class="btn btn-success" onclick="loadOrdersFromSheet()">Odśwież zlecenia</button>
-                <button class="btn" style="background-color: #f59e0b; color: white;" onclick="testWritePermissions()">Test zapisu</button>
             </div>
             <div id="status-message"></div>
-            <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">
-                <div>Do zapisu (zatwierdzania) arkusz musi być udostępniony jako "Edytor", nie tylko "Przeglądający".</div>
-                <button style="margin-top: 4px; font-size: 11px; padding: 2px 8px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer;" onclick="toggleDebugMode()">Tryb debugowania: <span id="debug-mode">WYŁ</span></button>
-                <div style="margin-top: 4px; font-size: 11px;">Włącz debugowanie i sprawdź konsolę (F12), aby zobaczyć szczegóły wczytywania zleceń.</div>
-                <div style="margin-top: 4px; font-size: 11px;">Test zapisu zapisze wartość testową w komórce Z1.</div>
-                <div style="margin-top: 8px; padding: 8px; background-color: #e0f7fa; border-radius: 4px; font-size: 11px;">
-                    <strong>Kryteria wczytywania zleceń:</strong><br>
-                    • Kolumna C (Surowiec): "Dostępny", "Dostępne", "Tak" lub podobne<br>
-                    • Kolumna D (Status): "W realizacji"<br>
-                    • Kolumna F (Zaplanowane): puste<br>
-                    • Kolumna A: niepuste ID zlecenia<br>
-                    • Kolumna E: czas produkcji > 0
+            <div style="margin-top: 12px; padding: 12px; background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; font-size: 13px;">
+                <strong>Ważne:</strong> Arkusz musi być udostępniony publicznie:
+                <ol style="margin-top: 8px; margin-left: 20px;">
+                    <li>W Google Sheets kliknij "Udostępnij" (prawy górny róg)</li>
+                    <li>Kliknij "Zmień na: Każdy, kto ma link"</li>
+                    <li>Dla odczytu: wybierz "Przeglądający"</li>
+                    <li>Dla zapisu (zatwierdzanie): wybierz "Edytor"</li>
+                    <li>Upewnij się, że Google Sheets API jest włączone w konsoli Google Cloud</li>
+                </ol>
+                <div style="margin-top: 8px; padding: 8px; background-color: #dbeafe; border-radius: 4px;">
+                    <strong>Jak włączyć Google Sheets API:</strong><br>
+                    1. Wejdź na <a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a><br>
+                    2. Stwórz nowy projekt lub wybierz istniejący<br>
+                    3. Włącz "Google Sheets API" w bibliotece API<br>
+                    4. Stwórz klucz API w sekcji "Credentials"<br>
+                    5. (Opcjonalnie) Ogranicz klucz do Google Sheets API
                 </div>
             </div>
         </div>
@@ -612,6 +615,26 @@
                 </table>
             </div>
         </div>
+        
+        <!-- Legenda -->
+        <div class="instructions">
+            <p><strong>Instrukcja:</strong></p>
+            <ul>
+                <li><strong>Połącz z arkuszem Google Sheets podając ID arkusza i klucz API</strong></li>
+                <li><strong>Wybierz maszynę (RK, OM, N240, N330) - każda ma niezależny plan</strong></li>
+                <li><strong>Użyj strzałek ← → aby przewijać kalendarz po 2 dni</strong></li>
+                <li>Przeciągnij zlecenia z górnej sekcji do planera</li>
+                <li>Zlecenia można przemieszczać między dniami i godzinami</li>
+                <li>Wstawianie zlecenia automatycznie przesuwa inne w dół</li>
+                <li>Długie zlecenia są automatycznie dzielone między dni (żółte - łączą się przy przeciąganiu)</li>
+                <li><strong>Najedź na zlecenie i kliknij czerwoną linię ✂️ aby podzielić ręcznie (pomarańczowe - niezależne części)</strong></li>
+                <li><strong>Kliknij zlecenie aby je zaznaczyć, użyj strzałek ↑↓ do przesuwania</strong></li>
+                <li><strong>Kliknij ✓ aby zatwierdzić zlecenie w planie (aktualizuje arkusz)</strong></li>
+                <li>Kliknij × aby usunąć zlecenie z planera</li>
+                <li>Każdy slot to 15 minut (godziny pracy: 6:00-5:45+ następnego dnia)</li>
+                <li>Ciemny tło oznacza godziny nocne (22:00-6:00)</li>
+            </ul>
+        </div>
     </div>
 
     <!-- Google Sheets API -->
@@ -643,51 +666,6 @@
             apiKey: '',
             isInitialized: false
         };
-        
-        // Tryb debugowania
-        let debugMode = false;
-        
-        function toggleDebugMode() {
-            debugMode = !debugMode;
-            document.getElementById('debug-mode').textContent = debugMode ? 'WŁ' : 'WYŁ';
-            console.log('Tryb debugowania:', debugMode ? 'włączony' : 'wyłączony');
-        }
-        
-        // Test uprawnień do zapisu
-        function testWritePermissions() {
-            if (!googleSheetsConfig.isInitialized) {
-                showStatus('Najpierw połącz z arkuszem', 'error');
-                return;
-            }
-            
-            const testRange = `${googleSheetsConfig.sheetName}!Z1`;
-            const testValue = `Test ${new Date().toLocaleString()}`;
-            
-            console.log('Test zapisu do arkusza - komórka Z1');
-            
-            gapi.client.sheets.spreadsheets.values.update({
-                spreadsheetId: googleSheetsConfig.spreadsheetId,
-                range: testRange,
-                valueInputOption: 'RAW',
-                resource: {
-                    values: [[testValue]]
-                }
-            }).then(response => {
-                showStatus('Test zapisu zakończony sukcesem! Arkusz ma uprawnienia do edycji.', 'success');
-                if (debugMode) {
-                    console.log('Test zapisu - odpowiedź:', response);
-                }
-            }).catch(error => {
-                if (debugMode) {
-                    console.error('Test zapisu - błąd:', error);
-                }
-                if (error.status === 403) {
-                    showStatus('Test zapisu nieudany! Arkusz musi być udostępniony jako "Edytor", nie "Przeglądający".', 'error');
-                } else {
-                    showStatus('Test zapisu nieudany: ' + (error.message || 'Nieznany błąd'), 'error');
-                }
-            });
-        }
 
         // Ustaw currentWeekStart na najbliższy poniedziałek
         currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1);
@@ -720,8 +698,7 @@
                 }).then(() => {
                     googleSheetsConfig.isInitialized = true;
                     showStatus('Połączono z Google Sheets!', 'success');
-                    // Automatycznie wczytaj zlecenia po połączeniu
-                    setTimeout(() => loadOrdersFromSheet(), 500);
+                    loadOrdersFromSheet();
                 }).catch(error => {
                     showStatus('Błąd połączenia: ' + error.message, 'error');
                 });
@@ -747,8 +724,7 @@
                 return;
             }
 
-            // Pobierz więcej kolumn na wypadek, gdyby dane były przesunięte
-            const range = `${googleSheetsConfig.sheetName}!A:H`;
+            const range = `${googleSheetsConfig.sheetName}!A:F`;
             
             gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: googleSheetsConfig.spreadsheetId,
@@ -762,61 +738,22 @@
 
                 unscheduledOrders = [];
                 sheetRowMap = {};
-                
-                if (debugMode) {
-                    console.log('Pobrane dane z arkusza:', values.length, 'wierszy');
-                    console.log('Sprawdzane kolumny: A (ID), B (Nazwa), C (Surowiec), D (Status), E (Czas), F (Zaplanowane)');
-                    if (values.length > 0) {
-                        console.log('Pierwszy wiersz arkusza:', values[0]);
-                    }
-                }
-                
-                // Sprawdź czy są jakiekolwiek dane
-                let dataRowsCount = 0;
-                let skippedRowsCount = 0;
-                let errorTypes = {
-                    surowiec: 0,
-                    status: 0,
-                    zaplanowane: 0,
-                    brakId: 0,
-                    brakCzasu: 0
-                };
 
                 // Pomijamy nagłówek (pierwszy wiersz)
                 for (let i = 1; i < values.length; i++) {
                     const row = values[i];
-                    if (!row || row.length < 5) continue;  // Pomijamy puste lub niekompletne wiersze
-                    
-                    const orderId = (row[0] || '').toString().trim().replace(/[\r\n]/g, '');
-                    const productName = (row[1] || '').toString().trim().replace(/[\r\n]/g, '');
-                    const rawMaterial = (row[2] || '').toString().trim().replace(/[\r\n]/g, '');
-                    const status = (row[3] || '').toString().trim().replace(/[\r\n]/g, '');
-                    const productionTimeStr = (row[4] || '').toString().trim().replace(/[\r\n]/g, '');
-                    const productionTime = parseInt(productionTimeStr) || 0;
-                    const isPlanned = (row[5] || '').toString().trim().replace(/[\r\n]/g, '');
+                    const orderId = row[0] || '';
+                    const productName = row[1] || '';
+                    const rawMaterial = row[2] || '';
+                    const status = row[3] || '';
+                    const productionTime = parseInt(row[4]) || 0;
+                    const isPlanned = row[5] || '';
 
-                    if (debugMode) {
-                        console.log(`Wiersz ${i+1}: ID=${orderId}, Surowiec="${rawMaterial}", Status="${status}", Czas=${productionTime}, Zaplanowane="${isPlanned}"`);
-                        
-                        // Dodatkowe szczegóły dla debugowania
-                        if (i < 5) { // Pierwsze 5 wierszy
-                            console.log('Surowe dane wiersza:', row);
-                        }
-                    }
-
-                    // Sprawdzamy warunki (case-insensitive i trim)
-                    const rawMaterialNormalized = rawMaterial.toLowerCase().trim();
-                    const statusNormalized = status.toLowerCase().trim();
-                    
-                    if ((rawMaterialNormalized === 'dostępny' || 
-                         rawMaterialNormalized === 'dostepny' ||
-                         rawMaterialNormalized === 'tak' ||
-                         rawMaterialNormalized === 'yes' ||
-                         rawMaterialNormalized === 'dostępne' ||
-                         rawMaterialNormalized === 'dostepne') && 
-                        statusNormalized === 'w realizacji' && 
-                        isPlanned.trim() === '' &&
-                        orderId !== '' && 
+                    // Sprawdzamy warunki
+                    if (rawMaterial === 'Dostępny' && 
+                        status === 'W realizacji' && 
+                        isPlanned === '' &&
+                        orderId && 
                         productionTime > 0) {
                         
                         unscheduledOrders.push({
@@ -827,75 +764,13 @@
 
                         // Zapisujemy mapowanie ID zlecenia na numer wiersza (i+1 bo arkusz numeruje od 1)
                         sheetRowMap[orderId] = i + 1;
-                        if (debugMode) {
-                            console.log(`Dodano zlecenie: ${orderId}`);
-                        }
-                        dataRowsCount++;
-                    } else {
-                        skippedRowsCount++;
-                        if (debugMode) {
-                            console.log(`Pominięto wiersz ${i+1} - nie spełnia warunków:`);
-                            
-                            let errorCount = 0;
-                            if (rawMaterialNormalized !== 'dostępny' && 
-                                rawMaterialNormalized !== 'dostepny' &&
-                                rawMaterialNormalized !== 'tak' &&
-                                rawMaterialNormalized !== 'yes' &&
-                                rawMaterialNormalized !== 'dostępne' &&
-                                rawMaterialNormalized !== 'dostepne') {
-                                console.log(`  - Surowiec: "${rawMaterial}" (oczekiwano: "Dostępny" lub podobne)`);
-                                errorTypes.surowiec++;
-                                errorCount++;
-                            }
-                            if (statusNormalized !== 'w realizacji') {
-                                console.log(`  - Status: "${status}" (oczekiwano: "W realizacji")`);
-                                errorTypes.status++;
-                                errorCount++;
-                            }
-                            if (isPlanned.trim() !== '') {
-                                console.log(`  - Zaplanowane: "${isPlanned}" (długość: ${isPlanned.length}, oczekiwano: puste)`);
-                                errorTypes.zaplanowane++;
-                                errorCount++;
-                            }
-                            if (orderId === '') {
-                                console.log(`  - Brak ID zlecenia`);
-                                errorTypes.brakId++;
-                                errorCount++;
-                            }
-                            if (productionTime <= 0) {
-                                console.log(`  - Czas produkcji: ${productionTime} (oczekiwano: > 0)`);
-                                errorTypes.brakCzasu++;
-                                errorCount++;
-                            }
-                            
-                            if (errorCount === 0) {
-                                console.log(`  - Nieznany błąd (sprawdź dane)`);
-                            }
-                        }
                     }
                 }
 
-                showStatus(`Wczytano ${unscheduledOrders.length} zleceń (pominięto ${skippedRowsCount} z ${values.length - 1} wierszy)`, 'success');
-                
-                if (debugMode) {
-                    if (unscheduledOrders.length === 0 && dataRowsCount === 0 && values.length > 1) {
-                        console.warn('Nie znaleziono żadnych zleceń spełniających kryteria! Sprawdź wartości w arkuszu.');
-                    }
-                    
-                    if (skippedRowsCount > 0) {
-                        console.log('\nPodsumowanie pominiętych wierszy:');
-                        if (errorTypes.surowiec > 0) console.log(`- Nieprawidłowy surowiec: ${errorTypes.surowiec} wierszy`);
-                        if (errorTypes.status > 0) console.log(`- Nieprawidłowy status: ${errorTypes.status} wierszy`);
-                        if (errorTypes.zaplanowane > 0) console.log(`- Już zaplanowane: ${errorTypes.zaplanowane} wierszy`);
-                        if (errorTypes.brakId > 0) console.log(`- Brak ID: ${errorTypes.brakId} wierszy`);
-                        if (errorTypes.brakCzasu > 0) console.log(`- Brak/nieprawidłowy czas: ${errorTypes.brakCzasu} wierszy`);
-                    }
-                }
+                showStatus(`Wczytano ${unscheduledOrders.length} zleceń`, 'success');
                 renderAll();
             }).catch(error => {
-                if (debugMode || error.status === 403 || error.status === 404) {
-                    console.error('Błąd:', error);
-                }
+                console.error('Błąd:', error);
                 if (error.status === 403) {
                     showStatus('Błąd 403: Brak dostępu. Sprawdź czy arkusz jest udostępniony publicznie.', 'error');
                 } else if (error.status === 404) {
@@ -913,10 +788,6 @@
                 return;
             }
 
-            if (debugMode) {
-                console.log('Zatwierdzanie zlecenia:', orderId);
-            }
-
             // Znajdź zlecenie w harmonogramie
             let orderData = null;
             let orderDate = null;
@@ -929,34 +800,16 @@
                 }
             });
 
-            if (!orderData) {
-                if (debugMode) {
-                    console.error('Nie znaleziono zlecenia w harmonogramie');
-                }
-                return;
-            }
+            if (!orderData) return;
 
             // Znajdź oryginalny ID zlecenia (w przypadku części)
             const originalId = orderData.originalId || orderData.id;
-            const baseId = originalId.split('_part')[0];  // Lepszy sposób na usunięcie _part
-            
-            if (debugMode) {
-                console.log('Oryginalny ID:', originalId, 'Base ID:', baseId);
-            }
             
             // Sprawdź czy mamy numer wiersza dla tego zlecenia
-            const rowNumber = sheetRowMap[baseId] || sheetRowMap[originalId];
+            const rowNumber = sheetRowMap[originalId];
             if (!rowNumber) {
                 showStatus('Nie znaleziono zlecenia w arkuszu', 'error');
-                if (debugMode) {
-                    console.error('Brak numeru wiersza dla:', baseId, originalId);
-                    console.log('Dostępne mapowania:', sheetRowMap);
-                }
                 return;
-            }
-
-            if (debugMode) {
-                console.log('Aktualizacja wiersza:', rowNumber);
             }
 
             // Aktualizuj kolumnę F w arkuszu
@@ -969,41 +822,21 @@
                 resource: {
                     values: [['ZAPL']]
                 }
-            }).then(response => {
-                if (debugMode) {
-                    console.log('Odpowiedź z API:', response);
-                }
-                
+            }).then(() => {
                 // Oznacz zlecenie jako zatwierdzone
                 if (!confirmedOrders[selectedMachine][orderDate]) {
                     confirmedOrders[selectedMachine][orderDate] = [];
                 }
                 confirmedOrders[selectedMachine][orderDate].push(orderId);
                 
-                // Oznacz wszystkie części zlecenia jako zatwierdzone
-                if (orderData.originalId) {
-                    const allParts = getAllPartsOfOrder(orderData.originalId);
-                    allParts.forEach(part => {
-                        const partDate = formatDateKey(part.date);
-                        if (!confirmedOrders[selectedMachine][partDate]) {
-                            confirmedOrders[selectedMachine][partDate] = [];
-                        }
-                        if (!confirmedOrders[selectedMachine][partDate].includes(part.id)) {
-                            confirmedOrders[selectedMachine][partDate].push(part.id);
-                        }
-                    });
-                }
-                
-                showStatus(`Zatwierdzono zlecenie ${baseId}`, 'success');
+                showStatus(`Zatwierdzono zlecenie ${originalId}`, 'success');
                 renderAll();
             }).catch(error => {
-                if (debugMode) {
-                    console.error('Błąd aktualizacji:', error);
-                }
+                console.error('Błąd:', error);
                 if (error.status === 403) {
-                    showStatus('Błąd 403: Brak uprawnień do zapisu. Arkusz musi być udostępniony jako "Edytor", nie tylko "Przeglądający".', 'error');
+                    showStatus('Błąd 403: Brak uprawnień do zapisu. Arkusz musi mieć uprawnienia do edycji.', 'error');
                 } else {
-                    showStatus('Błąd aktualizacji: ' + (error.message || 'Sprawdź uprawnienia arkusza'), 'error');
+                    showStatus('Błąd aktualizacji: ' + (error.message || 'Nieznany błąd'), 'error');
                 }
             });
         }
@@ -1522,8 +1355,8 @@
                             <div class="order-title">${orderInSlot.title}</div>
                             <div class="order-duration ${durationClass}">${formatDuration(orderInSlot.duration)}</div>
                             <div class="order-actions">
-                                ${!isConfirmed ? `<button class="action-btn confirm-btn" onclick="event.stopPropagation(); confirmOrder('${orderInSlot.id}')" title="Zatwierdź zlecenie">✓</button>` : ''}
-                                <button class="action-btn remove-btn" onclick="event.stopPropagation(); removeFromSchedule('${orderInSlot.id}')" title="Usuń z planera">×</button>
+                                ${!isConfirmed ? `<button class="action-btn confirm-btn" onclick="confirmOrder('${orderInSlot.id}')" title="Zatwierdź zlecenie">✓</button>` : ''}
+                                <button class="action-btn remove-btn" onclick="removeFromSchedule('${orderInSlot.id}')" title="Usuń z planera">×</button>
                             </div>
                             ${!isConfirmed ? '<div class="keyboard-hint">↑↓</div>' : ''}
                         `;
